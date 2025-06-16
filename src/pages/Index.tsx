@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import VideoFeed from '@/components/VideoFeed';
 import InterviewControls from '@/components/InterviewControls';
 import SummaryModal from '@/components/SummaryModal';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import Banner from '@/components/ui/banner';
 
 const Index = () => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
@@ -31,13 +32,13 @@ const Index = () => {
 
   const handleStartInterview = () => {
     setIsInterviewStarted(true);
-    setIsListening(true);
+   // setIsListening(true);
   };
 
   const handleNextQuestion = () => {
     if (currentQuestion < totalQuestions) {
       setCurrentQuestion(currentQuestion + 1);
-      setIsListening(true);
+      setIsListening(false);
     } else {
       setIsInterviewStarted(false);
       setShowSummary(true);
@@ -49,17 +50,47 @@ const Index = () => {
     setShowSummary(true);
   };
 
+  //  useEffect(() => {
+  //     textToSpeech("Hi Anjuka, Welcome to SmartHire.AI. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+  // }, []);
+
+  const textToSpeech = async (text) => {
+  const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
+  const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // <-- Replace with your chosen voice ID
+
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: "eleven_monolingual_v1",
+        voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+      }),
+    }
+  );
+  if (!response.ok) throw new Error("Failed to synthesize speech");
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+  audio.play();
+};
+
   if (!isInterviewStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-4xl w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Welcome to Your AI Interview
+              Hi Anjuka, Welcome to SmartHire.AI
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               You'll be interviewed by our advanced AI agent. Please ensure your microphone and camera are working properly. 
-              The interview will consist of {totalQuestions} questions and should take approximately 15-20 minutes.
             </p>
           </div>
 
@@ -156,7 +187,7 @@ const Index = () => {
             </div>
             <div className="flex gap-2">
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                {isListening ? 'Listening...' : 'Ready'}
+                {isListening ? 'Listening...' : 'Speaking'}
               </Badge>
               <Button variant="outline" onClick={handleFinishInterview}>
                 End Interview
@@ -187,9 +218,10 @@ const Index = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <p className="text-lg text-gray-800 leading-relaxed">
-                    {currentQuestionText}
-                  </p>
+                 <Banner 
+                 currentQuestionText={currentQuestionText}
+                 setIsListening={setIsListening}
+                 />
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -197,7 +229,7 @@ const Index = () => {
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
                     <span className="text-sm font-medium">
-                      {isListening ? 'Listening to your response...' : 'Processing your answer...'}
+                      {isListening ? 'Listening to your response...' : 'Reading the question...'}
                     </span>
                   </div>
                 </div>

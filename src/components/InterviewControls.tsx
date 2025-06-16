@@ -47,7 +47,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
           <Button
             onClick={handleNextClick}
             className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-6"
-            disabled={isListening}
+            disabled={!isListening}
           >
             Next Question
             <ArrowRight className="h-4 w-4" />
@@ -56,7 +56,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
           <Button
             onClick={handleFinishClick}
             className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 px-6"
-            disabled={isListening}
+            disabled={!isListening}
           >
             Finish Interview
             <FileText className="h-4 w-4" />
