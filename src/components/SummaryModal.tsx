@@ -14,33 +14,38 @@ interface SummaryModalProps {
 const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
   // Mock data for the interview summary
   const summaryData = {
-    duration: '18 minutes',
-    questionsAnswered: 5,
+    duration: '3 minutes',
+    questionsAnswered: 4,
     overallRating: 'Good',
     strengths: [
-      'Clear communication skills',
-      'Relevant experience mentioned',
+      'Ability to articulate technical concepts',
+      'Solid grasp of core React concepts',
       'Professional demeanor'
     ],
     areasForImprovement: [
-      'Could provide more specific examples',
-      'Expand on technical skills'
+      'Improve conciseness and precision in communication',
+      'Could provide more specific examples'
     ],
     responses: [
       {
-        question: 'Tell me about yourself and your background.',
-        summary: 'Candidate provided a clear overview of their professional journey with relevant experience in the field.',
-        rating: 'Good'
+        question: "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
+        summary: "Provided a very clear and accurate definition of the Virtual DOM, including the 'diffing' process and its direct impact on performance. Demonstrated a strong foundational understanding.",
+        rating: "Excellent"
       },
       {
-        question: 'What interests you most about this position?',
-        summary: 'Showed genuine interest in the role and company, mentioned specific aspects that appeal to them.',
-        rating: 'Excellent'
+        question: "What are the key differences between state and props in React, and when would you use each?",
+        summary: "Clearly articulated the differences between state and props, including mutability and data flow direction. The 'Counter' example was concise and effectively illustrated a practical application for both.",
+        rating: "Good"
       },
       {
-        question: 'Describe a challenging project you\'ve worked on.',
-        summary: 'Provided a concrete example with clear problem-solving approach and measurable outcomes.',
-        rating: 'Good'
+        question: "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
+        summary: "Described unidirectional flow accurately, including the parent-to-child data transfer and child-to-parent communication via callbacks. The benefits of predictability were mentioned. Could have elaborated slightly more on how callbacks facilitate upstream communication.",
+        rating: "Average"
+      },
+       {
+        question: "Can you describe the main phases of a React component's lifecycle and give examples of lifecycle methods you've used?",
+        summary: "Correctly identified the main lifecycle phases. While `useEffect` is the right modern answer for functional components, the explanation could have been slightly more detailed on *how* it maps to each phase beyond just dependencies, or mentioned an equivalent for class components if that was expected context.",
+        rating: "Developing"
       }
     ]
   };
@@ -51,8 +56,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'good':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'fair':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Developing':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }

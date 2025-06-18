@@ -12,6 +12,8 @@ import {
   DialogActions,
 } from "@mui/material";
 
+import PaycorLogo from "../assets/PaycorLogo.png"
+
 const jobRole = "Intern Software Engineer";
 const jobDescription = `
 Job Description
@@ -93,12 +95,17 @@ const CvUpload: React.FC = () => {
       sx={{
         minHeight: "100vh",
         display: "flex",
+        flexDirection:"column",
         justifyContent: "center",
         alignItems: "center",
         p: 4,
         backgroundColor: "white",
       }}
     >
+      <img width={120} height={50}  src={PaycorLogo}/>
+       <Typography variant="h5" fontWeight="bold" mb={2} sx={{ color: "black" }}>
+        {jobRole}
+        </Typography>
       <Box
         sx={{
           display: "flex",
@@ -111,20 +118,17 @@ const CvUpload: React.FC = () => {
           backgroundColor: "white",
         }}
       >
-        {/* Left Section */}
         <Box
           sx={{
             flex: 1,
             p: 4,
-            background: "#2563eb",
+            background: "#f4791f",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
           }}
         >
-          <Typography variant="h5" fontWeight="bold" mb={2} sx={{ color: "white" }}>
-            {jobRole}
-          </Typography>
+        
           <Paper
             elevation={1}
             sx={{

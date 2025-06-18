@@ -9,23 +9,23 @@ import InterviewControls from '@/components/InterviewControls';
 import SummaryModal from '@/components/SummaryModal';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import Banner from '@/components/ui/banner';
+import SmartHireLogo from "../assets/SmartHireLogo.png"
 
 const Index = () => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [totalQuestions] = useState(5);
+  const [totalQuestions] = useState(4);
   const [isListening, setIsListening] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
 
   const questions = [
-    "Tell me about yourself and your background.",
-    "What interests you most about this position?",
-    "Describe a challenging project you've worked on.",
-    "How do you handle working under pressure?",
-    "Where do you see yourself in five years?"
-  ];
+  "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
+  "What are the key differences between state and props in React, and when would you use each?",
+  "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
+  "Can you describe the main phases of a React component's lifecycle and give examples of lifecycle methods you've used?"
+];
 
   const currentQuestionText = questions[currentQuestion - 1];
   const progress = (currentQuestion / totalQuestions) * 100;
@@ -50,9 +50,9 @@ const Index = () => {
     setShowSummary(true);
   };
 
-  //  useEffect(() => {
-  //     textToSpeech("Hi Anjuka, Welcome to SmartHire.AI. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
-  // }, []);
+   useEffect(() => {
+      textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+  }, []);
 
   const textToSpeech = async (text) => {
   const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
@@ -85,13 +85,14 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-4xl w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center items-center mb-8">
+            {/* <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Hi Anjuka, Welcome to SmartHire.AI
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            </h1> */}
+            <img width={180} height={75} src={SmartHireLogo} className="inline-block mx-auto"/>
+            {/* <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               You'll be interviewed by our advanced AI agent. Please ensure your microphone and camera are working properly. 
-            </p>
+            </p> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -221,6 +222,7 @@ const Index = () => {
                  <Banner 
                  currentQuestionText={currentQuestionText}
                  setIsListening={setIsListening}
+                 questionNumber={currentQuestion-1}
                  />
                 </div>
 

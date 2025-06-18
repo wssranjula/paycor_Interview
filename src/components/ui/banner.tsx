@@ -3,16 +3,25 @@ import React, {useEffect} from 'react'
 interface BannerProps {
   currentQuestionText: string;
   setIsListening: (listening: boolean) => void;
+  questionNumber:number
 }
 
 const  banner: React.FC<BannerProps> = ({
     currentQuestionText,
-    setIsListening
+    setIsListening,
+    questionNumber
 }) => {
+
+const conversationalQuestions = [
+  "Alright, let's kick things off with a fundamental" ,
+  "That's a great explanation. Building on that",
+  "Excellent",
+  "Perfect. let's move to the last question"
+     ];
 
     useEffect(()=>{
     console.log("this is current question..",currentQuestionText)
-    // textToSpeech(currentQuestionText)
+    textToSpeech(conversationalQuestions[questionNumber]+ currentQuestionText)
     },[currentQuestionText])
 
 const textToSpeech = async (text) => {
