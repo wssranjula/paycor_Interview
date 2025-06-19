@@ -14,7 +14,7 @@ import SmartHireLogo from "../assets/SmartHireLogo.png"
 const Index = () => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [totalQuestions] = useState(4);
+  const [totalQuestions] = useState(3);
   const [isListening, setIsListening] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -23,8 +23,7 @@ const Index = () => {
   const questions = [
   "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
   "What are the key differences between state and props in React, and when would you use each?",
-  "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
-  "Can you describe the main phases of a React component's lifecycle and give examples of lifecycle methods you've used?"
+  "How does data typically flow through a React application, and why is this unidirectional approach preferred?"
 ];
 
   const currentQuestionText = questions[currentQuestion - 1];

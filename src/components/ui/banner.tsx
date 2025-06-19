@@ -15,7 +15,6 @@ const  banner: React.FC<BannerProps> = ({
 const conversationalQuestions = [
   "Alright, let's kick things off with a fundamental" ,
   "That's a great explanation. Building on that",
-  "Excellent",
   "Perfect. let's move to the last question"
      ];
 

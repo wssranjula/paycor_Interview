@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React,{useEffect} from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,13 +41,41 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
         question: "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
         summary: "Described unidirectional flow accurately, including the parent-to-child data transfer and child-to-parent communication via callbacks. The benefits of predictability were mentioned. Could have elaborated slightly more on how callbacks facilitate upstream communication.",
         rating: "Average"
-      },
-       {
-        question: "Can you describe the main phases of a React component's lifecycle and give examples of lifecycle methods you've used?",
-        summary: "Correctly identified the main lifecycle phases. While `useEffect` is the right modern answer for functional components, the explanation could have been slightly more detailed on *how* it maps to each phase beyond just dependencies, or mentioned an equivalent for class components if that was expected context.",
-        rating: "Developing"
       }
     ]
+  };
+
+   useEffect(() => {
+    if(isOpen){
+      textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+    }
+    }, [isOpen]);
+  
+    const textToSpeech = async (text) => {
+    const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
+    const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // <-- Replace with your chosen voice ID
+  
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: "eleven_monolingual_v1",
+          voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+        }),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to synthesize speech");
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
   };
 
   const getRatingColor = (rating: string) => {
