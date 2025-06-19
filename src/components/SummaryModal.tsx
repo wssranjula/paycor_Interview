@@ -24,7 +24,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
   // Mock data for the interview summary
   const summaryData = {
     duration: '3 minutes',
-    questionsAnswered: 4,
+    questionsAnswered: 3,
     overallRating: 'Good',
     strengths: [
       'Ability to articulate technical concepts',
@@ -32,7 +32,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
       'Professional demeanor'
     ],
     areasForImprovement: [
-      'Improve conciseness and precision in communication',
+      'Expand on breadth of technical skills',
       'Could provide more specific examples'
     ],
     responses: [
@@ -149,7 +149,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
           <div>
             <Tabs value={value} onChange={handleChange} aria-label="icon label tabs example">
               <Tab icon={<SchoolIcon />} label="Skill Assessment" />
-              <Tab icon={<FaceRetouchingNaturalIcon />} label="Behavioral Assessment" />
+              <Tab icon={<FaceRetouchingNaturalIcon />} label="Communication Assessment" />
               <Tab icon={<PlagiarismIcon />} label="Plagiarism" />
             </Tabs>
           </div>
