@@ -1,10 +1,19 @@
 
-import React,{useEffect} from 'react';
+import React,{useEffect,useState} from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, MessageSquare, FileText } from 'lucide-react';
+
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+
+import PlagiarismIcon from '@mui/icons-material/Plagiarism';
+import SchoolIcon from '@mui/icons-material/School';
+import FaceRetouchingNaturalIcon from '@mui/icons-material/FaceRetouchingNatural';
+import PlagiarismSummery from './PlagiarismSummery';
+import BahavioralSummery from './BahavioralSummery';
 
 interface SummaryModalProps {
   isOpen: boolean;
@@ -45,11 +54,17 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
     ]
   };
 
-   useEffect(() => {
-    if(isOpen){
-      textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
-    }
-    }, [isOpen]);
+  const [value, setValue] = React.useState(0);
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+  };
+
+  //  useEffect(() => {
+  //   if(isOpen){
+  //     textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+  //   }
+  //   }, [isOpen]);
   
     const textToSpeech = async (text) => {
     const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
@@ -131,7 +146,16 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
             </Card>
           </div>
 
+          <div>
+            <Tabs value={value} onChange={handleChange} aria-label="icon label tabs example">
+              <Tab icon={<SchoolIcon />} label="Skill Assessment" />
+              <Tab icon={<FaceRetouchingNaturalIcon />} label="Behavioral Assessment" />
+              <Tab icon={<PlagiarismIcon />} label="Plagiarism" />
+            </Tabs>
+          </div>
+
           {/* Strengths and Areas for Improvement */}
+         {value ==0 && <div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -185,6 +209,11 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
               ))}
             </CardContent>
           </Card>
+          </div>}
+
+          {value ==1 && <div><BahavioralSummery/></div>}
+
+          {value ==2 && <div><PlagiarismSummery/></div>}
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
