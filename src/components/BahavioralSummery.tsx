@@ -151,7 +151,7 @@ const BehavioralAssessment = () => {
             {overallData.communicationScore >= 80 ? <CheckCircleIcon color="success" /> : 
              overallData.communicationScore >= 60 ? <WarningIcon color="warning" /> : 
              <ErrorIcon color="error" />}
-            Overall Communication Assessment
+            Overall Assessment
           </Typography>
           
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, mb: 3 }}>
@@ -249,7 +249,7 @@ const BehavioralAssessment = () => {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h5" component="h2" gutterBottom>
-            Question-wise Communication Analysis
+            Question-wise Analysis
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Detailed breakdown of communication skills for each interview question

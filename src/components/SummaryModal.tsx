@@ -60,11 +60,11 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
     setValue(newValue);
   };
 
-  //  useEffect(() => {
-  //   if(isOpen){
-  //     textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
-  //   }
-  //   }, [isOpen]);
+   useEffect(() => {
+    if(isOpen){
+      textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+    }
+    }, [isOpen]);
   
     const textToSpeech = async (text) => {
     const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
@@ -148,8 +148,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <Tabs value={value} onChange={handleChange} aria-label="icon label tabs example">
-              <Tab icon={<SchoolIcon />} label="Skill Assessment" />
-              <Tab icon={<FaceRetouchingNaturalIcon />} label="Communication Assessment" />
+              <Tab icon={<SchoolIcon />} label="Skill" />
+              <Tab icon={<FaceRetouchingNaturalIcon />} label="Communication" />
               <Tab icon={<PlagiarismIcon />} label="Plagiarism" />
             </Tabs>
           </div>

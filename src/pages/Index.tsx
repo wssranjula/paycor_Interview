@@ -49,9 +49,9 @@ const Index = () => {
     setShowSummary(true);
   };
 
-  //  useEffect(() => {
-  //     textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
-  // }, []);
+   useEffect(() => {
+      textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+  }, []);
 
   const textToSpeech = async (text) => {
   const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key

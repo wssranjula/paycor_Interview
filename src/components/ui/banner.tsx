@@ -20,7 +20,7 @@ const conversationalQuestions = [
 
     useEffect(()=>{
     console.log("this is current question..",currentQuestionText)
-    // textToSpeech(conversationalQuestions[questionNumber]+ currentQuestionText)
+    textToSpeech(conversationalQuestions[questionNumber]+ currentQuestionText)
     },[currentQuestionText])
 
 const textToSpeech = async (text) => {
