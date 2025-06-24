@@ -54,7 +54,7 @@ const Index = () => {
   }, []);
 
   const textToSpeech = async (text) => {
-  const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
+  const apiKey = "sk_e22858d9fb425d71974efdc861de1ac41f818187f270ac20"; // <-- Replace with your ElevenLabs API key
   const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // <-- Replace with your chosen voice ID
 
   const response = await fetch(
