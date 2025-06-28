@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
@@ -11,66 +12,40 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 import PaycorLogo from "../assets/PaycorLogo.png"
+import InterviewQuestionContext , { InterviewQuestionContextType } from '../contexts/InterviewQuestionContext';
+import JobTitleContext, {JobTitleContextType} from "@/contexts/JobTitleContext";
 
-const jobRole = "Intern Software Engineer";
-const jobDescription = `
-Job Description
-About the Role:
+interface CvUploadProps {
+  jobRole: string;
+  jobDescription: string;
+}
 
- ABC is seeking a talented and passionate Frontend Developer with strong expertise in React to join our growing engineering team. You will play a key role in building and maintaining user-facing applications, contributing to the entire software development lifecycle. This is an exciting opportunity to work on challenging projects, collaborate with a skilled team, and make a significant impact on our products.
 
-Responsibilities:
-
-- Design, develop, and maintain high-performance and scalable frontend applications using React.
-- Write clean, well-documented, and testable JavaScript or TypeScript code.
-- Collaborate closely with UI/UX designers to translate mockups and prototypes into functional and visually appealing user interfaces.
-- Integrate frontend applications with backend APIs and services.
-- Participate in code reviews, providing constructive feedback and ensuring code quality.
-- Troubleshoot and debug frontend issues, implementing effective solutions.
-- Stay up-to-date with the latest frontend technologies, trends, and best practices.
-- Contribute to the improvement of our development processes and tools.
-- Mentor and guide junior frontend developers (if applicable).
-- Participate in agile ceremonies, including sprint planning, daily stand-ups, and retrospectives.
-
-Requirements:
-
-- Bachelor's degree in Computer Science or a related field (or equivalent practical experience).
-- Proven experience (X+ years, specify level e.g., 3+ years) as a Frontend Developer with a strong focus on React.
-- Deep understanding of core React principles, including component lifecycle, state management (e.g., Redux, Context API, Zustand), hooks, and performance optimization.
-- Solid proficiency in JavaScript (ES6+) or TypeScript.
-- Experience with modern frontend build tools and workflows (e.g., Webpack, Babel, npm/yarn).
-- Strong understanding of HTML5, CSS3, and responsive design principles.
-- Experience with testing frameworks (e.g., Jest, React Testing Library, Cypress).
-- Familiarity with RESTful APIs and asynchronous programming.
-- Experience with version control systems (Git).
-- Excellent problem-solving, communication, and collaboration skills.
-- Ability to work independently and as part of a team in an Agile environment.
-
-Bonus Points (Optional):
-
-- Experience with server-side rendering (SSR) or static site generation (SSG) frameworks (e.g., Next.js, Gatsby).
-- Familiarity with UI component libraries (e.g., Material UI, Ant Design).
-- Experience with containerization technologies (e.g., Docker, Kubernetes).
-- Knowledge of CI/CD pipelines.
-- Contributions to open-source projects.
-- Experience with performance monitoring and optimization tools.
-
-What We Offer:
-
-- Competitive salary and benefits package.
-- Opportunity to work on challenging and impactful projects.
-- A collaborative and supportive work environment.
-- Opportunities for professional growth and development.
-- [Add any other specific benefits your company offers]
-`;
-
-const CvUpload: React.FC = () => {
+const CvUpload: React.FC<CvUploadProps> = ({
+  jobRole,
+  jobDescription
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [structuredData, setStructuredData] = useState<Record<string, string>>({}); // More specific type
+
+  const { setQuestionsArray }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
+  const {setJobTitleString}: JobTitleContextType = useContext(JobTitleContext);
+  const navigate = useNavigate(); // Initialize useNavigate hook
+
+  useEffect(()=>{
+    setJobTitleString(jobRole);
+  },[])
+
+  const endpoint = "https://paycor-cv.cognitiveservices.azure.com";
+  const apiKey = "bfa851e3d4d34a9285ec9592878232aa";
+  const modelId = "prebuilt-layout";
+  const apiUrl = `${endpoint}/formrecognizer/documentModels/${modelId}:analyze?api-version=2023-07-31`;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -80,14 +55,129 @@ const CvUpload: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const parseCvText = (text: string): Record<string, string> => { // Added type for text and return
+    const sections: Record<string, string[]> = {}; // Use string[] for values initially
+    const requiredSections = [
+      "EXPERIENCE",
+      "EDUCATION",
+      "SKILLS & INTERESTS",
+      "SKILLS",
+      "PROJECT EXPERIENCE",
+      "WORK EXPEREINCE",
+      "CERTIFICATIONS",
+      "PROJECTS",
+      "SUMMARY",
+    ];
+
+    const ignoreSections = ["REFERENCES", "CONTACT", "PAGE", "ADDRESS"];
+    let currentSection: string | null = null; // Type for currentSection
+
+    const lines = text.split("\n");
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+
+      if (!trimmedLine) return;
+
+      if (/^[A-Z\s&]+$/.test(trimmedLine) && !/\d/.test(trimmedLine)) {
+        if (requiredSections.includes(trimmedLine)) {
+          currentSection = trimmedLine;
+          sections[currentSection] = [];
+        } else if (!ignoreSections.includes(trimmedLine)) {
+          currentSection = trimmedLine;
+          sections[currentSection] = [];
+        } else {
+          currentSection = null;
+        }
+      } else if (currentSection) {
+        sections[currentSection].push(trimmedLine);
+      }
+    });
+
+    const finalSections: Record<string, string> = {}; // Final type for joined sections
+    Object.keys(sections).forEach((key) => {
+      finalSections[key] = sections[key].join("\n");
+    });
+
+    return finalSections;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      alert("Please select a PDF file first!");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setStructuredData({});
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await axios.post(apiUrl, formData, {
+        headers: {
+          "Ocp-Apim-Subscription-Key": apiKey,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response || !response.headers) {
+        throw new Error("Invalid response from Azure API");
+      }
+
+      const operationLocation = response.headers["operation-location"];
+      if (!operationLocation) throw new Error("No operation location found.");
+
+      let result = null;
+      while (!result) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const pollResponse = await axios.get(operationLocation, {
+          headers: { "Ocp-Apim-Subscription-Key": apiKey },
+        });
+
+        if (pollResponse.data.status === "succeeded") {
+          result = pollResponse.data.analyzeResult;
+        }
+      }
+
+      const extractedText: string = result.content || "No text extracted."; // Type for extractedText
+      const structuredOutput = parseCvText(extractedText);
+      setStructuredData(structuredOutput);
+
+      console.log("text....", structuredOutput);
+
+      const questionResponse = await axios.post('http://localhost:3000/api/generate-questions',
+        {
+          jobDescription,
+          cvDetails: structuredOutput,
+        });
+
+      console.log("questions from API.....", questionResponse.data);
+      
+      // Ensure the data is an array of strings before setting
+      if (Array.isArray(questionResponse.data) && questionResponse.data.every((item: any) => typeof item === 'string')) {
+        setQuestionsArray(questionResponse.data as string[]);
+      } else {
+        console.error("API response for questions is not a string array:", questionResponse.data);
+        alert("Received unexpected question format from API.");
+        return; // Stop if data format is incorrect
+      }
+
       setShowPopup(true);
-    }, 1000); // Simulate upload
+
+    } catch (error) {
+      console.error("Error during extraction and generation:", error); // Log full error
+      alert("Error during extraction and generation. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to navigate to interview page when "Next" is clicked
+  const handleNextClick = () => {
+    setShowPopup(false); // Close the dialog
+    navigate("/interview"); // Navigate to the interview page
   };
 
   return (
@@ -102,10 +192,10 @@ const CvUpload: React.FC = () => {
         backgroundColor: "white",
       }}
     >
-      <img width={120} height={50}  src={PaycorLogo}/>
-       <Typography variant="h5" fontWeight="bold" mb={2} sx={{ color: "black" }}>
+      <img width={120} height={50} src={PaycorLogo} alt="Paycor Logo" />
+      <Typography variant="h5" fontWeight="bold" mb={2} sx={{ color: "black" }}>
         {jobRole}
-        </Typography>
+      </Typography>
       <Box
         sx={{
           display: "flex",
@@ -128,7 +218,6 @@ const CvUpload: React.FC = () => {
             justifyContent: "center",
           }}
         >
-        
           <Paper
             elevation={1}
             sx={{
@@ -149,23 +238,23 @@ const CvUpload: React.FC = () => {
           <Typography variant="h6" color="white" fontWeight="bold" mb={2}>
             Submit Your CV
           </Typography>
-       <Button
-  variant="outlined"
-  component="label"
-  size="small"
-  sx={{
-    borderRadius: "20px",
-    textTransform: "none",
-    fontWeight: "bold",
-    borderColor: "white",
-    color: "white",
-    mb: 1,
-    alignSelf: "flex-start",
-    minWidth: "100px",
-    padding: "2px 12px",
-    fontSize: "0.85rem",
-    "&:hover": { backgroundColor: "#e8f4fc", color: "#17022b" },
-  }}
+          <Button
+            variant="outlined"
+            component="label"
+            size="small"
+            sx={{
+              borderRadius: "20px",
+              textTransform: "none",
+              fontWeight: "bold",
+              borderColor: "white",
+              color: "white",
+              mb: 1,
+              alignSelf: "flex-start",
+              minWidth: "100px",
+              padding: "2px 12px",
+              fontSize: "0.85rem",
+              "&:hover": { backgroundColor: "#e8f4fc", color: "#17022b" },
+            }}
           >
             Upload CV
             <input type="file" hidden accept=".pdf" onChange={handleFileChange} />
@@ -179,39 +268,29 @@ const CvUpload: React.FC = () => {
             Supported format: PDF
           </Typography>
           <Button
-  variant="contained"
-  color="primary"
-  size="small"
-  onClick={handleSubmit}
-  sx={{
-    mt: 1,
-    borderRadius: "20px",
-    textTransform: "none",
-    fontWeight: "bold",
-    backgroundColor: "white",
-    color: "#17022b",
-    alignSelf: "flex-start",
-    minWidth: "100px",
-    padding: "2px 12px",
-    fontSize: "0.85rem",
-    "&:hover": { backgroundColor: "#004182", color: "white" },
-  }}
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={handleSubmit}
+            sx={{
+              mt: 1,
+              borderRadius: "20px",
+              textTransform: "none",
+              fontWeight: "bold",
+              backgroundColor: "white",
+              color: "#17022b",
+              alignSelf: "flex-start",
+              minWidth: "100px",
+              padding: "2px 12px",
+              fontSize: "0.85rem",
+              "&:hover": { backgroundColor: "#004182", color: "white" },
+            }}
             disabled={!file || loading}
           >
             {loading ? "Processing..." : "Submit"}
           </Button>
         </Box>
-        {/* Right Section: Placeholder for image or illustration */}
-        {/* <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#f9f9f9",
-          }}
-        >
-        </Box> */}
+        {/* Removed commented-out Right Section */}
       </Box>
 
       {/* Loading Backdrop */}
@@ -231,8 +310,8 @@ const CvUpload: React.FC = () => {
           <Button
             variant="contained"
             color="success"
-            href="/interview"
-             size = "small"
+            onClick={handleNextClick} // Changed from href to onClick
+            size = "small"
             sx={{
               borderRadius: "20px",
               textTransform: "none",

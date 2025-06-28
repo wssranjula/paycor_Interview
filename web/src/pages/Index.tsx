@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,36 +7,101 @@ import VideoFeed from '@/components/VideoFeed';
 import InterviewControls from '@/components/InterviewControls';
 import SummaryModal from '@/components/SummaryModal';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
-import Banner from '@/components/ui/banner';
 import SmartHireLogo from "../assets/SmartHireLogo.png"
 
-const Index = () => {
+import InterviewQuestionContext, { InterviewQuestionContextType } from '../contexts/InterviewQuestionContext';
+import JobTitleContext, {JobTitleContextType} from '@/contexts/JobTitleContext';
+
+const Index: React.FC = () => { // Explicitly type Index as a functional component
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [totalQuestions] = useState(3);
   const [isListening, setIsListening] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
+  const [welcomeSpeechPlayed, setWelcomeSpeechPlayed] = useState(false); // New state to track welcome speech
+  const [answeredArray, setAnsweredArray] = useState<any[]>([]);
+  const [evaluationAnsweredArray, setEvaluationAnsweredArray] = useState<any>({
+    "individualEvaluations": [],
+    "overallEvaluation": {
+        "rating": "",
+        "summary": "",
+        "strengths": [],
+        "areasForImprovement": [],
+    }
+});
+  const [isEvaluating, setEvaluating] = useState(false);
 
-  const questions = [
-  "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
-  "What are the key differences between state and props in React, and when would you use each?",
-  "How does data typically flow through a React application, and why is this unidirectional approach preferred?"
-];
+  const { questions }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
+  const { jobTitle }: JobTitleContextType = useContext(JobTitleContext);
+  const totalQuestions = questions.length;
 
-  const currentQuestionText = questions[currentQuestion - 1];
-  const progress = (currentQuestion / totalQuestions) * 100;
+  const currentQuestionText = questions[currentQuestion - 1] || "Loading next question..."; // Handle undefined gracefully
+
+  const progress = totalQuestions > 0 ? (currentQuestion / totalQuestions) * 100 : 0;
+
+  useEffect(()=>{
+    console.log("answeredArray.....",answeredArray)
+  },[answeredArray.length])
+
+  useEffect(()=>{
+    console.log("job title....", jobTitle)
+  },[jobTitle])
+
+  // Text-to-Speech function with proper typing
+  const textToSpeech = async (text: string) => {
+    const apiKey = "sk_e22858d9fb425d71974efdc861de1ac41f818187f270ac20"; // Replace with your ElevenLabs API key
+    const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // Replace with your chosen voice ID
+
+    try {
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg",
+          },
+          body: JSON.stringify({
+            text: text,
+            model_id: "eleven_monolingual_v1",
+            voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+          }),
+        }
+      );
+      if (!response.ok) throw new Error(`Failed to synthesize speech: ${response.statusText}`);
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (error) {
+      console.error("Error during text-to-speech:", error);
+      // Implement a more robust error handling/user feedback here
+    }
+  };
+
+  // Effect for initial welcome speech, runs only once
+  useEffect(() => {
+    if (!welcomeSpeechPlayed) { // Check if it hasn't played yet
+      // textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+      setWelcomeSpeechPlayed(true); // Mark as played
+    }
+  }, [welcomeSpeechPlayed]); // Dependency array: only re-run if welcomeSpeechPlayed changes (which it will, once)
+
 
   const handleStartInterview = () => {
+    if (questions.length === 0) {
+      alert("No questions loaded yet. Please upload CV first to generate questions.");
+      return;
+    }
     setIsInterviewStarted(true);
-   // setIsListening(true);
+    // setIsListening(true); // This should probably happen after the first question is spoken by the AI via Banner component
   };
 
   const handleNextQuestion = () => {
     if (currentQuestion < totalQuestions) {
       setCurrentQuestion(currentQuestion + 1);
-      setIsListening(false);
     } else {
       setIsInterviewStarted(false);
       setShowSummary(true);
@@ -49,49 +113,12 @@ const Index = () => {
     setShowSummary(true);
   };
 
-   useEffect(() => {
-      textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
-  }, []);
-
-  const textToSpeech = async (text) => {
-  const apiKey = "sk_e22858d9fb425d71974efdc861de1ac41f818187f270ac20"; // <-- Replace with your ElevenLabs API key
-  const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // <-- Replace with your chosen voice ID
-
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-    {
-      method: "POST",
-      headers: {
-        "xi-api-key": apiKey,
-        "Content-Type": "application/json",
-        "Accept": "audio/mpeg",
-      },
-      body: JSON.stringify({
-        text: text,
-        model_id: "eleven_monolingual_v1",
-        voice_settings: { stability: 0.5, similarity_boost: 0.5 }
-      }),
-    }
-  );
-  if (!response.ok) throw new Error("Failed to synthesize speech");
-  const audioBlob = await response.blob();
-  const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
-  audio.play();
-};
-
   if (!isInterviewStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-4xl w-full">
           <div className="text-center items-center mb-8">
-            {/* <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Hi Anjuka, Welcome to SmartHire.AI
-            </h1> */}
-            <img width={180} height={75} src={SmartHireLogo} className="inline-block mx-auto"/>
-            {/* <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              You'll be interviewed by our advanced AI agent. Please ensure your microphone and camera are working properly. 
-            </p> */}
+            <img width={180} height={75} src={SmartHireLogo} className="inline-block mx-auto" alt="SmartHire Logo" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -151,25 +178,34 @@ const Index = () => {
           </div>
 
           <div className="text-center">
-            <Button 
+            <Button
               onClick={handleStartInterview}
               size="lg"
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={!isMicEnabled || !isVideoEnabled}
+              disabled={!isMicEnabled || !isVideoEnabled || questions.length === 0} // Disable if no questions
             >
               Start Interview
             </Button>
             {(!isMicEnabled || !isVideoEnabled) && (
               <p className="text-sm text-red-600 mt-2">
-                Please enable both camera and microphone to start the interview
+                Please enable both camera and microphone to start the interview.
+              </p>
+            )}
+            {questions.length === 0 && (
+              <p className="text-sm text-red-600 mt-2">
+                No interview questions loaded. Please go back to the CV upload page to generate questions.
               </p>
             )}
           </div>
         </div>
 
-        <SummaryModal 
-          isOpen={showSummary} 
-          onClose={() => setShowSummary(false)} 
+        <SummaryModal
+          isOpen={showSummary}
+          onClose={() => setShowSummary(false)}
+          evaluationAnsweredArray={evaluationAnsweredArray}
+          setEvaluationAnsweredArray={setEvaluationAnsweredArray}
+          isEvaluating={isEvaluating}
+          setEvaluating={setEvaluating}
         />
       </div>
     );
@@ -187,7 +223,7 @@ const Index = () => {
             </div>
             <div className="flex gap-2">
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                {isListening ? 'Listening...' : 'Speaking'}
+                {isListening ? 'Listening...' : isEvaluating?'Evaluating' : 'Speaking'}
               </Badge>
               <Button variant="outline" onClick={handleFinishInterview}>
                 End Interview
@@ -217,41 +253,39 @@ const Index = () => {
                 <CardTitle className="text-lg">Current Question</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                 <Banner 
-                 currentQuestionText={currentQuestionText}
-                 setIsListening={setIsListening}
-                 questionNumber={currentQuestion-1}
-                 />
+                <div >
+                  {/* Ensure currentQuestionText is not undefined */}
+                  <InterviewControls
+                    currentQuestionText={currentQuestionText}
+                    setIsListening={setIsListening}
+                    questionNumber={currentQuestion - 1}
+                    isListening={isListening}
+                    answeredArray={answeredArray}
+                    setAnsweredArray={setAnsweredArray}
+                    currentQuestion={currentQuestion}
+                    totalQuestions={totalQuestions}
+                    onNextQuestion={handleNextQuestion}
+                    onFinishInterview={handleFinishInterview} 
+                    evaluationAnsweredArray={evaluationAnsweredArray}
+                    setEvaluationAnsweredArray={setEvaluationAnsweredArray}
+                    isEvaluating={isEvaluating}
+                    setEvaluating={setEvaluating}
+                    jobTitle={jobTitle}
+                  />
                 </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">AI Agent Status:</p>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-                    <span className="text-sm font-medium">
-                      {isListening ? 'Listening to your response...' : 'Reading the question...'}
-                    </span>
-                  </div>
-                </div>
-
-                <InterviewControls
-                  currentQuestion={currentQuestion}
-                  totalQuestions={totalQuestions}
-                  onNextQuestion={handleNextQuestion}
-                  onFinishInterview={handleFinishInterview}
-                  isListening={isListening}
-                  setIsListening={setIsListening}
-                />
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
 
-      <SummaryModal 
-        isOpen={showSummary} 
-        onClose={() => setShowSummary(false)} 
+      <SummaryModal
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        evaluationAnsweredArray={evaluationAnsweredArray}
+        setEvaluationAnsweredArray={setEvaluationAnsweredArray}
+        isEvaluating={isEvaluating}
+        setEvaluating={setEvaluating}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, MessageSquare, FileText } from 'lucide-react';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -18,40 +19,28 @@ import BahavioralSummery from './BahavioralSummery';
 interface SummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
+  evaluationAnsweredArray: any;
+  setEvaluationAnsweredArray: React.Dispatch<React.SetStateAction<any>>;
+  isEvaluating: boolean;
+  setEvaluating: (listening: boolean) => void;
 }
 
-const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
+const SummaryModal: React.FC<SummaryModalProps> = ({ 
+  isOpen,
+  onClose,
+  evaluationAnsweredArray, 
+  setEvaluationAnsweredArray,
+  isEvaluating,
+  setEvaluating
+}) => {
   // Mock data for the interview summary
   const summaryData = {
     duration: '3 minutes',
     questionsAnswered: 3,
-    overallRating: 'Good',
-    strengths: [
-      'Ability to articulate technical concepts',
-      'Solid grasp of core React concepts',
-      'Professional demeanor'
-    ],
-    areasForImprovement: [
-      'Expand on breadth of technical skills',
-      'Could provide more specific examples'
-    ],
-    responses: [
-      {
-        question: "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
-        summary: "Provided a very clear and accurate definition of the Virtual DOM, including the 'diffing' process and its direct impact on performance. Demonstrated a strong foundational understanding.",
-        rating: "Excellent"
-      },
-      {
-        question: "What are the key differences between state and props in React, and when would you use each?",
-        summary: "Clearly articulated the differences between state and props, including mutability and data flow direction. The 'Counter' example was concise and effectively illustrated a practical application for both.",
-        rating: "Good"
-      },
-      {
-        question: "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
-        summary: "Described unidirectional flow accurately, including the parent-to-child data transfer and child-to-parent communication via callbacks. The benefits of predictability were mentioned. Could have elaborated slightly more on how callbacks facilitate upstream communication.",
-        rating: "Average"
-      }
-    ]
+    overallRating: evaluationAnsweredArray?.overallEvaluation?.rating,
+    strengths: evaluationAnsweredArray?.overallEvaluation?.strengths,
+    areasForImprovement: evaluationAnsweredArray?.overallEvaluation?.areasForImprovement,
+    responses: evaluationAnsweredArray?.individualEvaluations
   };
 
   const [value, setValue] = React.useState(0);
@@ -60,11 +49,11 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
     setValue(newValue);
   };
 
-   useEffect(() => {
-    if(isOpen){
-      textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
-    }
-    }, [isOpen]);
+  //  useEffect(() => {
+  //   if(isOpen){
+  //     textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+  //   }
+  //   }, [isOpen]);
   
     const textToSpeech = async (text) => {
     const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key
@@ -94,12 +83,12 @@ const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, onClose }) => {
   };
 
   const getRatingColor = (rating: string) => {
-    switch (rating.toLowerCase()) {
+    switch (rating?.toLowerCase()) {
       case 'excellent':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'good':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Developing':
+      case 'developing':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
