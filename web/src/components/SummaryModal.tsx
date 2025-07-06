@@ -49,11 +49,11 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
     setValue(newValue);
   };
 
-  //  useEffect(() => {
-  //   if(isOpen){
-  //     textToSpeech("Thanks for your time today, Anjuka. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
-  //   }
-  //   }, [isOpen]);
+   useEffect(() => {
+    if(isOpen){
+      textToSpeech("Thanks for your time today, Isuru. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+    }
+    }, [isOpen]);
   
     const textToSpeech = async (text) => {
     const apiKey = "sk_b86d697eac985e1c1fc14527d7c7e02f89944b4414dbd1f1"; // <-- Replace with your ElevenLabs API key

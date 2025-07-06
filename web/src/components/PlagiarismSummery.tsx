@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -25,9 +25,13 @@ import {
   Mouse as MouseIcon,
   AccessTime as ClockIcon
 } from '@mui/icons-material';
+import InterviewQuestionContext, { InterviewQuestionContextType } from '@/contexts/InterviewQuestionContext';
 
 const PlagiarismSummary = () => {
   const navigate = useNavigate();
+
+   const { questions : generatedQuestions }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
+  
 
   // Mock data for demonstration
   const overallData = {
@@ -48,7 +52,7 @@ const PlagiarismSummary = () => {
   const questions = [
     {
       id: 1,
-      question: "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[0]:"",
       riskScore: 45,
       cheatingEvents: [
         { type: 'gaze', count: 1, severity: 'low' },
@@ -57,7 +61,7 @@ const PlagiarismSummary = () => {
     },
     {
       id: 2,
-      question: "What are the key differences between state and props in React, and when would you use each?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[1]:"",
       riskScore: 60,
       cheatingEvents: [
         { type: 'gaze', count: 2, severity: 'medium' },
@@ -67,7 +71,7 @@ const PlagiarismSummary = () => {
     },
     {
       id: 3,
-      question: "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[2]:"",
       riskScore: 80,
       cheatingEvents: [
         { type: 'gaze', count: 3, severity: 'high' },

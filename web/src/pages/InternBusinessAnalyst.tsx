@@ -1,11 +1,11 @@
 import React from 'react'
 import CvUpload from './CvUpload'
 
-const jobRole = "Intern Business Analyst";
+const jobRole = "Business Analyst";
 const jobDescription = `
-About the Role: Intern Business Analyst
+About the Role: Business Analyst
 
-Paycor is seeking a talented and analytical Intern Business Analyst with a basic understanding of business processes and data analysis to join our growing team. You will play a support role in bridging the gap between business needs and technical solutions, contributing to the entire product development lifecycle. This is an exciting opportunity to work on challenging projects, collaborate with a skilled team, and make a significant impact on our products.
+Paycor is seeking a talented and analytical Business Analyst with a basic understanding of business processes and data analysis to join our growing team. You will play a support role in bridging the gap between business needs and technical solutions, contributing to the entire product development lifecycle. This is an exciting opportunity to work on challenging projects, collaborate with a skilled team, and make a significant impact on our products.
 
 
 Responsibilities:
@@ -32,7 +32,6 @@ Requirements:
 - Ability to translate business needs into clear and concise documentation.
 - Familiarity with data analysis techniques and tools (e.g., Excel).
 - Basic understanding of software development lifecycles (SDLC).
-- Experience with version control systems (e.g., Git) is a plus.
 - Ability to work independently and as part of a team in an Agile environment.
 
 

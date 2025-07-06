@@ -84,7 +84,7 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
   // Effect for initial welcome speech, runs only once
   useEffect(() => {
     if (!welcomeSpeechPlayed) { // Check if it hasn't played yet
-      // textToSpeech("Hi Anjuka, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+      textToSpeech("Hi Isuru, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
       setWelcomeSpeechPlayed(true); // Mark as played
     }
   }, [welcomeSpeechPlayed]); // Dependency array: only re-run if welcomeSpeechPlayed changes (which it will, once)

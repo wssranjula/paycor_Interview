@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,9 +30,12 @@ import {
   CheckCircle
 } from '@mui/icons-material';
 import { CardHeader, CardTitle } from '@/components/ui/card';
+import InterviewQuestionContext, { InterviewQuestionContextType } from '@/contexts/InterviewQuestionContext';
 
 const BehavioralAssessment = () => {
   const navigate = useNavigate();
+
+   const { questions : generatedQuestions }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
 
    const summaryData = {
     strengths: [
@@ -65,7 +68,7 @@ const BehavioralAssessment = () => {
   const questions = [
     {
       id: 1,
-      question: "Can you explain the concept of Virtual DOM in React and why it's so beneficial for performance?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[0]:"",
       communicationScore: 82,
       metrics: {
         clarity: 85,
@@ -79,7 +82,7 @@ const BehavioralAssessment = () => {
     },
     {
       id: 2,
-      question: "What are the key differences between state and props in React, and when would you use each?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[1]:"",
       communicationScore: 75,
       metrics: {
         clarity: 80,
@@ -93,7 +96,7 @@ const BehavioralAssessment = () => {
     },
     {
       id: 3,
-      question: "How does data typically flow through a React application, and why is this unidirectional approach preferred?",
+      question: generatedQuestions?.length >0 ?generatedQuestions[2]:"",
       communicationScore: 88,
       metrics: {
         clarity: 90,
