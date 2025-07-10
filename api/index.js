@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Enable CORS for all origins during development.
 // For production, you might want to configure this to allow specific origins only:
-app.use(cors({ origin: 'http://localhost:8080' })); // Example for specific origin
+app.use(cors({ origin: '*' })); // Example for specific origin
 // app.use(cors()); 
 
 // Use the interview routes for the '/api' path

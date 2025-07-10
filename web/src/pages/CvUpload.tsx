@@ -147,7 +147,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
 
       console.log("text....", structuredOutput);
 
-      const questionResponse = await axios.post('http://localhost:3000/api/generate-questions',
+      const questionResponse = await axios.post(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/generate-questions`,
         {
           jobDescription,
           cvDetails: structuredOutput,
