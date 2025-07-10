@@ -236,7 +236,7 @@ const response = await fetch(
                     question: currentQuestionText,
                     answer: fullTranscriptRef.current.trim() // Use the ref for the most complete transcript
                 })
-            const apiUrl = `${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/evaluate-answers`;
+            const apiUrl = `${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/api/evaluate-answers`;
             // Use the most up-to-date answeredArray, which should now include the last question
             const response = await axios.post(apiUrl, {
               interviewData: finalAnswers,
