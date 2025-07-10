@@ -51,7 +51,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
 
     useEffect(() => {
     if(isOpen){
-      textToSpeech("Thanks for your time today, Isuru. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+      textToSpeech("Thanks for your time today, Mishal. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
     }
     }, [isOpen]);
   
