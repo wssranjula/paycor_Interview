@@ -49,7 +49,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
     setValue(newValue);
   };
 
-   useEffect(() => {
+    useEffect(() => {
     if(isOpen){
       textToSpeech("Thanks for your time today, Isuru. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
     }
@@ -95,15 +95,35 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
     }
   };
 
+  const getRatingMsgColor = (rating: string) => {
+    switch (rating?.toLowerCase()) {
+      case 'excellent':
+        return 'bg-green-100 text-lg text-green-800';
+      case 'good':
+        return 'bg-green-100 text-lg text-green-800';
+      case 'developing':
+        return 'bg-red-100 text-lg text-red-800';
+      default:
+        return 'bg-red-100 text-lg text-red-800';
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <FileText className="h-6 w-6 text-blue-600" />
             Interview Summary
           </DialogTitle>
         </DialogHeader>
+        <DialogHeader>
+        </DialogHeader>
+       <Badge className={getRatingMsgColor(summaryData.overallRating)}>{
+        summaryData.overallRating?.toLowerCase() == 'excellent' ?'Recommended for next round of interviews' : summaryData.overallRating?.toLowerCase() == 'good'? 'Recommended for next round of interviews':'Did not meet qualifications for the next round'
+        }</Badge>
+        </div>
 
         <div className="space-y-6">
           {/* Overview Cards */}
