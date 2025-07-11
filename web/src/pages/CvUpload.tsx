@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate
 import PaycorLogo from "../assets/PaycorLogo.png"
 import InterviewQuestionContext , { InterviewQuestionContextType } from '../contexts/InterviewQuestionContext';
 import JobTitleContext, {JobTitleContextType} from "@/contexts/JobTitleContext";
+import InterviewerNameContext, {InterviewerNameContextType} from "@/contexts/InterviewerNameContext";
+import { parse } from "path";
 
 interface CvUploadProps {
   jobRole: string;
@@ -36,6 +38,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
 
   const { setQuestionsArray }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
   const {setJobTitleString}: JobTitleContextType = useContext(JobTitleContext);
+  const {setInterviewerNameString}: InterviewerNameContextType = useContext(InterviewerNameContext);
   const navigate = useNavigate(); // Initialize useNavigate hook
 
   useEffect(()=>{
@@ -96,6 +99,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
     const finalSections: Record<string, string> = {}; // Final type for joined sections
     Object.keys(sections).forEach((key) => {
       finalSections[key] = sections[key].join("\n");
+      console.log("section......",sections[key])
     });
 
     return finalSections;
@@ -153,7 +157,14 @@ const CvUpload: React.FC<CvUploadProps> = ({
           cvDetails: structuredOutput,
         });
 
+      const name = await axios.post(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/api/extract-name`, {
+                text: extractedText
+            });  
+
       console.log("questions from API.....", questionResponse.data);
+      console.log("name from API.....", name?.data?.name);
+
+      setInterviewerNameString(name?.data?.name)
       
       // Ensure the data is an array of strings before setting
       if (Array.isArray(questionResponse.data) && questionResponse.data.every((item: any) => typeof item === 'string')) {

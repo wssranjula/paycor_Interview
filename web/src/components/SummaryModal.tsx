@@ -23,6 +23,7 @@ interface SummaryModalProps {
   setEvaluationAnsweredArray: React.Dispatch<React.SetStateAction<any>>;
   isEvaluating: boolean;
   setEvaluating: (listening: boolean) => void;
+  interviwerName: string
 }
 
 const SummaryModal: React.FC<SummaryModalProps> = ({ 
@@ -31,7 +32,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
   evaluationAnsweredArray, 
   setEvaluationAnsweredArray,
   isEvaluating,
-  setEvaluating
+  setEvaluating,
+  interviwerName
 }) => {
   // Mock data for the interview summary
   const summaryData = {
@@ -51,7 +53,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
 
     useEffect(() => {
     if(isOpen){
-      textToSpeech("Thanks for your time today, Mishal. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted");
+      textToSpeech(`Thanks for your time today, ${interviwerName}. Here's a summary of our interview, which I'll be sharing with the Paycor team. They'll reach out to you directly if you're shortlisted`);
     }
     }, [isOpen]);
   

@@ -11,6 +11,7 @@ import SmartHireLogo from "../assets/SmartHireLogo.png"
 
 import InterviewQuestionContext, { InterviewQuestionContextType } from '../contexts/InterviewQuestionContext';
 import JobTitleContext, {JobTitleContextType} from '@/contexts/JobTitleContext';
+import InterviewerNameContext, {InterviewerNameContextType} from '@/contexts/InterviewerNameContext';
 
 const Index: React.FC = () => { // Explicitly type Index as a functional component
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
@@ -34,6 +35,7 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
 
   const { questions }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
   const { jobTitle }: JobTitleContextType = useContext(JobTitleContext);
+  const { interviewerName }: InterviewerNameContextType = useContext(InterviewerNameContext);
   const totalQuestions = questions.length;
 
   const currentQuestionText = questions[currentQuestion - 1] || "Loading next question..."; // Handle undefined gracefully
@@ -47,6 +49,10 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
   useEffect(()=>{
     console.log("job title....", jobTitle)
   },[jobTitle])
+
+    useEffect(()=>{
+    console.log("interviewer Name....", interviewerName)
+  },[interviewerName])
 
   // Text-to-Speech function with proper typing
   const textToSpeech = async (text: string) => {
@@ -84,7 +90,7 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
   // Effect for initial welcome speech, runs only once
   useEffect(() => {
     if (!welcomeSpeechPlayed) { // Check if it hasn't played yet
-      textToSpeech("Hi Mishal, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!");
+      textToSpeech(`Hi ${interviewerName}, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!`);
       setWelcomeSpeechPlayed(true); // Mark as played
     }
   }, [welcomeSpeechPlayed]); // Dependency array: only re-run if welcomeSpeechPlayed changes (which it will, once)
@@ -206,6 +212,7 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
           setEvaluationAnsweredArray={setEvaluationAnsweredArray}
           isEvaluating={isEvaluating}
           setEvaluating={setEvaluating}
+          interviwerName={interviewerName}
         />
       </div>
     );
@@ -286,6 +293,7 @@ const Index: React.FC = () => { // Explicitly type Index as a functional compone
         setEvaluationAnsweredArray={setEvaluationAnsweredArray}
         isEvaluating={isEvaluating}
         setEvaluating={setEvaluating}
+        interviwerName={interviewerName}
       />
     </div>
   );

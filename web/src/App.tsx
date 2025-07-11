@@ -11,10 +11,12 @@ import NotFound from "./pages/NotFound";
 
 import InterviewQuestionProvider from './contexts/InterviewQuestionProvider';
 import JobTitleProvider from "./contexts/JobTitleProvider";
+import InterviewerNameProvider from "./contexts/InterviewerNameProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+<InterviewerNameProvider>
 <JobTitleProvider>
 <InterviewQuestionProvider>
   <QueryClientProvider client={queryClient}>
@@ -36,6 +38,7 @@ const App = () => (
   </QueryClientProvider>
 </InterviewQuestionProvider>
 </JobTitleProvider>
+</InterviewerNameProvider>
 );
 
 export default App;

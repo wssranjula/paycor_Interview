@@ -248,7 +248,90 @@ const evaluateAnswers = async (req, res) => {
     }
 };
 
+const identifyCvAndExtractName = async (req, res) => {
+    const { text } = req.body;
+
+    // Validate input
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+        return res.status(400).json({ error: 'Request body must contain a non-empty "text" string.' });
+    }
+
+    try {
+        let chatHistory = [];
+
+        const prompt = `
+            **STRICT INSTRUCTION:** Your response MUST be either the extracted name of a candidate from a CV, or the literal string "interviewer". No other text, explanations, or formatting are allowed.
+
+            Analyze the following text.
+            1. Determine if the text is a Curriculum Vitae (CV) or resume.
+            2. If it is a CV/resume, attempt to extract the full name of the candidate.
+            3. If a name is successfully extracted from a CV/resume, return ONLY that name.
+            4. Otherwise (if not a CV/resume, or if a CV/resume but no name is found), return ONLY the string "interviewee".
+
+            Examples:
+            Text: "This is a job description for a software engineer role."
+            Output: "interviewee"
+
+            Text: "Subject: Application for Software Engineer. Dear Hiring Manager, My name is Alice Smith, and I am writing to apply for..."
+            Output: "Alice Smith"
+
+            Text: "CV: John Doe. Experienced software developer with 10 years in the industry..."
+            Output: "John Doe"
+
+            Text: "This document outlines project deliverables."
+            Output: "interviewee"
+
+            Text: "My resume lists my skills in Python, Java, and C++."
+            Output: "interviewee"
+
+            Text to analyze:
+            ${text}
+        `;
+
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+        const payload = {
+            contents: chatHistory,
+            generationConfig: {
+                // We don't need a specific schema here as the output is a simple string.
+                // We'll parse it as plain text.
+            }
+        };
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.candidates && result.candidates.length > 0 &&
+            result.candidates[0].content && result.candidates[0].content.parts &&
+            result.candidates[0].content.parts.length > 0) {
+            const extractedName = result.candidates[0].content.parts[0].text.trim();
+            res.json({ name: extractedName });
+        } else {
+            console.warn('Gemini API response structure unexpected for name extraction:', result);
+            res.status(500).json({ error: 'Failed to identify CV or extract name: Unexpected API response format.' });
+        }
+
+    } catch (error) {
+        console.error('Error identifying CV or extracting name:', error);
+        res.status(500).json({ error: `Internal server error: ${error.message}` });
+    }
+};
+
+
 module.exports = {
     generateQuestions,
-    evaluateAnswers
+    evaluateAnswers,
+    identifyCvAndExtractName
 };
