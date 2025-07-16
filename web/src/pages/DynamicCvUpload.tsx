@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 
 interface Interview {
   id: string;
+  guid: string;
   jobTitle: string;
   jobDescription: string;
   customQuestions: string[];
@@ -15,21 +16,39 @@ interface Interview {
 }
 
 const DynamicCvUpload: React.FC = () => {
-  const { jobSlug } = useParams<{ jobSlug: string }>();
+  const { interviewGuid } = useParams<{ interviewGuid: string }>();
   const navigate = useNavigate();
   const [currentInterview, setCurrentInterview] = useState<Interview | null>(null);
 
   useEffect(() => {
-    // Load interview data from localStorage
+    // Try to load from localStorage first (for direct navigation from create page)
     const storedInterview = localStorage.getItem('currentInterview');
     if (storedInterview) {
       const interview = JSON.parse(storedInterview);
-      setCurrentInterview(interview);
+      if (interview.guid === interviewGuid) {
+        setCurrentInterview(interview);
+        return;
+      }
+    }
+
+    // If not found in localStorage, search in saved interviews by GUID
+    const savedInterviews = localStorage.getItem('smartHireInterviews');
+    if (savedInterviews && interviewGuid) {
+      const interviews = JSON.parse(savedInterviews);
+      const foundInterview = interviews.find((interview: Interview) => interview.guid === interviewGuid);
+      
+      if (foundInterview) {
+        setCurrentInterview(foundInterview);
+        localStorage.setItem('currentInterview', JSON.stringify(foundInterview));
+      } else {
+        // Interview not found, redirect to create interviews page
+        navigate('/create-interviews');
+      }
     } else {
-      // If no stored interview, redirect to create interviews page
+      // No interviews or GUID, redirect to create interviews page
       navigate('/create-interviews');
     }
-  }, [jobSlug, navigate]);
+  }, [interviewGuid, navigate]);
 
   const handleBackToInterviews = () => {
     navigate('/create-interviews');

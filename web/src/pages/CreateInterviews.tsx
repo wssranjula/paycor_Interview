@@ -21,14 +21,16 @@ import {
   Calendar, 
   Trash2,
   Edit3,
-  ExternalLink,
   Upload,
-  X
+  X,
+  Copy,
+  Check
 } from 'lucide-react';
 import SmartHireLogo from "../assets/SmartHireLogo.png";
 
 interface Interview {
   id: string;
+  guid: string; // Add GUID for URL generation
   jobTitle: string;
   jobDescription: string;
   customQuestions: string[];
@@ -42,6 +44,7 @@ const CreateInterviews: React.FC = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [copiedGuid, setCopiedGuid] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -50,11 +53,39 @@ const CreateInterviews: React.FC = () => {
     customQuestions: ['']
   });
 
+  // Generate a GUID (UUID v4)
+  const generateGuid = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
   // Load interviews from localStorage on component mount
   useEffect(() => {
     const savedInterviews = localStorage.getItem('smartHireInterviews');
     if (savedInterviews) {
-      setInterviews(JSON.parse(savedInterviews));
+      const interviews = JSON.parse(savedInterviews);
+      
+      // Migration: Add GUIDs to existing interviews that don't have them
+      const migratedInterviews = interviews.map((interview: any) => {
+        if (!interview.guid) {
+          return {
+            ...interview,
+            guid: generateGuid(),
+            customQuestions: interview.customQuestions || [] // Ensure customQuestions exists
+          };
+        }
+        return interview;
+      });
+      
+      setInterviews(migratedInterviews);
+      
+      // Save migrated interviews back to localStorage if any migration occurred
+      const needsMigration = interviews.some((interview: any) => !interview.guid);
+      if (needsMigration) {
+        localStorage.setItem('smartHireInterviews', JSON.stringify(migratedInterviews));
+      }
     }
   }, []);
 
@@ -95,6 +126,7 @@ const CreateInterviews: React.FC = () => {
 
     const newInterview: Interview = {
       id: Date.now().toString(),
+      guid: generateGuid(), // Generate GUID for URL
       jobTitle: formData.jobTitle.trim(),
       jobDescription: formData.jobDescription.trim(),
       customQuestions: validCustomQuestions,
@@ -104,7 +136,7 @@ const CreateInterviews: React.FC = () => {
     };
 
     if (isEditing) {
-      // Update existing interview
+      // Update existing interview (keep the same GUID)
       setInterviews(prev => 
         prev.map(interview => 
           interview.id === isEditing 
@@ -148,9 +180,35 @@ const CreateInterviews: React.FC = () => {
     // Store the selected interview data in localStorage for the CV upload page to use
     localStorage.setItem('currentInterview', JSON.stringify(interview));
     
-    // Navigate to CV upload page with dynamic route
-    const urlSlug = interview.jobTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    navigate(`/cv-upload/${urlSlug}`);
+    // Navigate to CV upload page with GUID
+    navigate(`/cv-upload/${interview.guid}`);
+  };
+
+  const handleCopyUrl = async (interview: Interview) => {
+    const url = `${window.location.origin}/cv-upload/${interview.guid}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedGuid(interview.guid);
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedGuid(null);
+      }, 2000);
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setCopiedGuid(interview.guid);
+      setTimeout(() => {
+        setCopiedGuid(null);
+      }, 2000);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -368,13 +426,31 @@ const CreateInterviews: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={() => handleNavigateToCvUpload(interview)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload CV & Start
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => handleNavigateToCvUpload(interview)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload CV & Start
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyUrl(interview);
+                      }}
+                      className="px-3"
+                      title="Copy interview URL"
+                    >
+                      {copiedGuid === interview.guid ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

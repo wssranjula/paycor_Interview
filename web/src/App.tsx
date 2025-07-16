@@ -31,8 +31,8 @@ const App = () => (
           {/* Interview Management Routes */}
           <Route path="/" element={<CreateInterviews />} />
           <Route path="/create-interviews" element={<CreateInterviews />} />
-          <Route path="/cv-upload/:jobSlug" element={<DynamicCvUpload />} />
-          <Route path="/interview/:jobSlug" element={<DynamicInterview />} />
+          <Route path="/cv-upload/:interviewGuid" element={<DynamicCvUpload />} />
+          <Route path="/interview/:interviewGuid" element={<DynamicInterview />} />
           
           {/* Legacy CV Upload Routes */}
           <Route path="/intern_software_engineer" element={<InternSoftwareEngineer />} />

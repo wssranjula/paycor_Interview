@@ -196,9 +196,15 @@ const CvUpload: React.FC<CvUploadProps> = ({
     setShowPopup(false);
     
     if (interviewId) {
-      // Navigate to dynamic interview page
-      const urlSlug = jobRole.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      navigate(`/interview/${urlSlug}`);
+      // Get the current interview from localStorage to access the GUID
+      const storedInterview = localStorage.getItem('currentInterview');
+      if (storedInterview) {
+        const interview = JSON.parse(storedInterview);
+        navigate(`/interview/${interview.guid}`);
+      } else {
+        // Fallback to original interview page
+        navigate("/interview");
+      }
     } else {
       // Fallback to original interview page
       navigate("/interview");
@@ -260,7 +266,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
               {jobDescription}
             </Typography>
             
-            {/* {customQuestions.length > 0 && (
+            {customQuestions.length > 0 && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="h6" fontWeight="bold" mb={1}>
                   Custom Interview Questions
@@ -273,7 +279,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
                   ))}
                 </Box>
               </Box>
-            )} */}
+            )}
           </Paper>
           
           <Typography variant="h6" color="white" fontWeight="bold" mb={2}>
