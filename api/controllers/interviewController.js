@@ -6,12 +6,13 @@ const API_KEY = "AIzaSyAh_l6njwOBEsdYZfglccyGCnV6MZWyOoU";
 
 /**
  * Generates interview questions based on job description and CV details using Gemini API.
+ * Now supports custom questions that are mixed with AI-generated questions.
  * This function is designed to be an Express.js controller.
- * @param {object} req - The Express request object. Expects req.body to contain jobDescription and cvDetails.
+ * @param {object} req - The Express request object. Expects req.body to contain jobDescription, cvDetails, and optionally customQuestions.
  * @param {object} res - The Express response object.
  */
 const generateQuestions = async (req, res) => {
-    const { jobDescription, cvDetails } = req.body;
+    const { jobDescription, cvDetails, customQuestions = [] } = req.body;
 
     // Validate input
     if (!jobDescription || !cvDetails) {
@@ -21,74 +22,175 @@ const generateQuestions = async (req, res) => {
     try {
         let chatHistory = [];
         
-        // Construct the prompt for the AI agent.
-        // Emphasize the need for unique/varied questions each time,
-        // and focus on probing CV details relevant to the JD.
-        const prompt = `
-            As an expert interviewer and AI assistant, your task is to generate a list of highly relevant, unique, and thought-provoking interview questions.
-            These questions must be specifically tailored to a candidate's CV in the context of the requirements for this role.
+        // Check if custom questions are provided
+        const validCustomQuestions = Array.isArray(customQuestions) ? customQuestions.filter(q => q && q.trim() !== '') : [];
+        
+        if (validCustomQuestions.length > 0) {
+            // This is for the interview stage - mix custom questions with AI-generated ones
+            const totalQuestionsNeeded = 3;
+            const aiQuestionsNeeded = Math.max(0, totalQuestionsNeeded - validCustomQuestions.length);
+            
+            let aiGeneratedQuestions = [];
+            
+            if (aiQuestionsNeeded > 0) {
+                // Generate AI questions to complement custom questions
+                const prompt = `
+                    As an expert interviewer and AI assistant, your task is to generate a list of highly relevant, unique, and thought-probing interview questions.
+                    These questions must be specifically tailored to a candidate's CV in the context of the requirements for this role.
 
-            Instructions:
-            1. Analyze the provided 'Job Description' and 'Candidate CV' thoroughly.
-            2. Generate questions that directly relate the candidate's experiences, skills, and projects (as described in their CV) to the needs and responsibilities outlined for this position.
-            3. dificulty level of the questions should be based on the Role.
-            4. Prioritize questions that cannot be answered with a simple 'yes' or 'no' and encourage the candidate to elaborate on their experiences and problem-solving approaches.
-            5. **Ensure the questions are designed to flow logically, allowing for follow-up discussions. Think of them as a sequence of probing inquiries rather than isolated points.**
-            6. **Crucially, even if the job requirements and candidate profile are identical to previous requests, strive to generate a fresh set of questions each time.** Think about different angles, deeper dives into specific projects, or behavioral questions based on the CV details.
-            7. Ensure the questions are professional and fair, focusing on the job's demands rather than referencing the 'job description document' directly.
-            8. Finally select 3 Random question form them and ignore other once.
+                    Instructions:
+                    1. Analyze the provided 'Job Description' and 'Candidate CV' thoroughly.
+                    2. Generate EXACTLY ${aiQuestionsNeeded} questions that directly relate the candidate's experiences, skills, and projects (as described in their CV) to the needs and responsibilities outlined for this position.
+                    3. Difficulty level of the questions should be based on the Role.
+                    4. Prioritize questions that cannot be answered with a simple 'yes' or 'no' and encourage the candidate to elaborate on their experiences and problem-solving approaches.
+                    5. **Ensure the questions are designed to flow logically, allowing for follow-up discussions. Think of them as a sequence of probing inquiries rather than isolated points.**
+                    6. **Crucially, even if the job requirements and candidate profile are identical to previous requests, strive to generate a fresh set of questions each time.** Think about different angles, deeper dives into specific projects, or behavioral questions based on the CV details.
+                    7. Ensure the questions are professional and fair, focusing on the job's demands rather than referencing the 'job description document' directly.
+                    8. Note that the interviewer has already prepared ${validCustomQuestions.length} custom question(s), so focus on complementary areas that aren't covered by those custom questions.
 
-            Job Description:
-            ${jobDescription}
+                    Job Description:
+                    ${jobDescription}
 
-            Candidate CV:
-            ${cvDetails}
+                    Candidate CV:
+                    ${cvDetails}
 
-            Please provide the questions as a JSON array of strings.
-        `;
+                    Custom Questions Already Prepared:
+                    ${validCustomQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+                    
+                    Please generate EXACTLY ${aiQuestionsNeeded} additional questions that complement these custom questions.
 
-        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    Please provide EXACTLY ${aiQuestionsNeeded} questions as a JSON array of strings.
+                `;
 
-        const payload = {
-            contents: chatHistory,
-            generationConfig: {
-                // We specify JSON output and define the schema for an array of strings.
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: "ARRAY",
-                    items: {
-                        type: "STRING"
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "STRING"
+                            }
+                        }
                     }
+                };
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    aiGeneratedQuestions = JSON.parse(jsonString);
+                } else {
+                    // Fallback questions
+                    const fallbackQuestions = [
+                        "Tell me about your experience with the technologies mentioned in this role.",
+                        "Describe a challenging project you've worked on and how you overcame the difficulties.",
+                        "Why are you interested in this particular position and our company?"
+                    ];
+                    aiGeneratedQuestions = fallbackQuestions.slice(0, aiQuestionsNeeded);
                 }
             }
-        };
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            // Combine custom questions and AI-generated questions
+            const allQuestions = [];
+            const customQuestionsArray = [...validCustomQuestions];
+            const aiQuestionsArray = [...aiGeneratedQuestions];
+            
+            // Simple strategy: alternate between custom and AI questions
+            while (customQuestionsArray.length > 0 || aiQuestionsArray.length > 0) {
+                if (customQuestionsArray.length > 0) {
+                    allQuestions.push(customQuestionsArray.shift());
+                }
+                if (aiQuestionsArray.length > 0) {
+                    allQuestions.push(aiQuestionsArray.shift());
+                }
+            }
 
-        // Make the API call to the Gemini model
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+            console.log(`Generated ${allQuestions.length} total questions (${validCustomQuestions.length} custom + ${aiGeneratedQuestions.length} AI-generated)`);
+            res.json(allQuestions.slice(0, 3));
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
-        const result = await response.json();
-
-        if (result.candidates && result.candidates.length > 0 &&
-            result.candidates[0].content && result.candidates[0].content.parts &&
-            result.candidates[0].content.parts.length > 0) {
-            const jsonString = result.candidates[0].content.parts[0].text;
-            const interviewQuestions = JSON.parse(jsonString); // Parse the JSON string into an array
-
-            res.json(interviewQuestions);
         } else {
-            console.warn('Gemini API response structure unexpected:', result);
-            res.status(500).json({ error: 'Failed to generate questions: Unexpected API response format.' });
+            // This is for CV upload stage - generate standard questions without custom questions
+            const prompt = `
+                As an expert interviewer and AI assistant, your task is to generate a list of highly relevant, unique, and thought-provoking interview questions.
+                These questions must be specifically tailored to a candidate's CV in the context of the requirements for this role.
+
+                Instructions:
+                1. Analyze the provided 'Job Description' and 'Candidate CV' thoroughly.
+                2. Generate questions that directly relate the candidate's experiences, skills, and projects (as described in their CV) to the needs and responsibilities outlined for this position.
+                3. Difficulty level of the questions should be based on the Role.
+                4. Prioritize questions that cannot be answered with a simple 'yes' or 'no' and encourage the candidate to elaborate on their experiences and problem-solving approaches.
+                5. **Ensure the questions are designed to flow logically, allowing for follow-up discussions. Think of them as a sequence of probing inquiries rather than isolated points.**
+                6. **Crucially, even if the job requirements and candidate profile are identical to previous requests, strive to generate a fresh set of questions each time.** Think about different angles, deeper dives into specific projects, or behavioral questions based on the CV details.
+                7. Ensure the questions are professional and fair, focusing on the job's demands rather than referencing the 'job description document' directly.
+                8. Finally select 3 Random questions from them and ignore other ones.
+
+                Job Description:
+                ${jobDescription}
+
+                Candidate CV:
+                ${cvDetails}
+
+                Please provide the questions as a JSON array of strings.
+            `;
+
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = {
+                contents: chatHistory,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "STRING"
+                        }
+                    }
+                }
+            };
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const jsonString = result.candidates[0].content.parts[0].text;
+                const interviewQuestions = JSON.parse(jsonString);
+                res.json(interviewQuestions);
+            } else {
+                console.warn('Gemini API response structure unexpected:', result);
+                res.status(500).json({ error: 'Failed to generate questions: Unexpected API response format.' });
+            }
         }
 
     } catch (error) {
@@ -328,7 +430,6 @@ const identifyCvAndExtractName = async (req, res) => {
         res.status(500).json({ error: `Internal server error: ${error.message}` });
     }
 };
-
 
 module.exports = {
     generateQuestions,

@@ -7,6 +7,9 @@ import CvUpload from "./pages/CvUpload";
 import InternSoftwareEngineer from "./pages/InternSoftwareEngineer";
 import InternBusinessAnalyst from "./pages/InternBusinessAnalyst";
 import Index from "./pages/Index";
+import CreateInterviews from "./pages/CreateInterviews";
+import DynamicInterview from "./pages/DynamicInterview";
+import DynamicCvUpload from "./pages/DynamicCvUpload";
 import NotFound from "./pages/NotFound";
 
 import InterviewQuestionProvider from './contexts/InterviewQuestionProvider';
@@ -25,13 +28,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* <Route path="/" element={<Index />} /> */}
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          {/* <Route path="*" element={<NotFound />} /> */}
-        <Route path="/intern_software_engineer" element={<InternSoftwareEngineer />} />
-        <Route path="/business_analyst" element={<InternBusinessAnalyst />} />
-        <Route path="/interview" element={<Index />} />
-        <Route path="*" element={<NotFound />} />
+          {/* Interview Management Routes */}
+          <Route path="/" element={<CreateInterviews />} />
+          <Route path="/create-interviews" element={<CreateInterviews />} />
+          <Route path="/cv-upload/:jobSlug" element={<DynamicCvUpload />} />
+          <Route path="/interview/:jobSlug" element={<DynamicInterview />} />
+          
+          {/* Legacy CV Upload Routes */}
+          <Route path="/intern_software_engineer" element={<InternSoftwareEngineer />} />
+          <Route path="/business_analyst" element={<InternBusinessAnalyst />} />
+          <Route path="/interview" element={<Index />} />
+          
+          {/* Catch-all route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

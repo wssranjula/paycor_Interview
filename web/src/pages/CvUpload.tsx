@@ -12,38 +12,40 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 import PaycorLogo from "../assets/PaycorLogo.png"
 import InterviewQuestionContext , { InterviewQuestionContextType } from '../contexts/InterviewQuestionContext';
 import JobTitleContext, {JobTitleContextType} from "@/contexts/JobTitleContext";
 import InterviewerNameContext, {InterviewerNameContextType} from "@/contexts/InterviewerNameContext";
-import { parse } from "path";
 
 interface CvUploadProps {
   jobRole: string;
   jobDescription: string;
+  customQuestions?: string[];
+  interviewId?: string;
 }
-
 
 const CvUpload: React.FC<CvUploadProps> = ({
   jobRole,
-  jobDescription
+  jobDescription,
+  customQuestions = [],
+  interviewId
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [structuredData, setStructuredData] = useState<Record<string, string>>({}); // More specific type
+  const [structuredData, setStructuredData] = useState<Record<string, string>>({});
 
   const { setQuestionsArray }: InterviewQuestionContextType = useContext(InterviewQuestionContext);
   const {setJobTitleString}: JobTitleContextType = useContext(JobTitleContext);
   const {setInterviewerNameString}: InterviewerNameContextType = useContext(InterviewerNameContext);
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate();
 
-  useEffect(()=>{
+  useEffect(() => {
     setJobTitleString(jobRole);
-  },[])
+  }, [jobRole, setJobTitleString]);
 
   const endpoint = "https://paycor-cv.cognitiveservices.azure.com";
   const apiKey = "bfa851e3d4d34a9285ec9592878232aa";
@@ -58,8 +60,8 @@ const CvUpload: React.FC<CvUploadProps> = ({
     }
   };
 
-  const parseCvText = (text: string): Record<string, string> => { // Added type for text and return
-    const sections: Record<string, string[]> = {}; // Use string[] for values initially
+  const parseCvText = (text: string): Record<string, string> => {
+    const sections: Record<string, string[]> = {};
     const requiredSections = [
       "EXPERIENCE",
       "EDUCATION",
@@ -73,7 +75,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
     ];
 
     const ignoreSections = ["REFERENCES", "CONTACT", "PAGE", "ADDRESS"];
-    let currentSection: string | null = null; // Type for currentSection
+    let currentSection: string | null = null;
 
     const lines = text.split("\n");
     lines.forEach((line) => {
@@ -96,10 +98,9 @@ const CvUpload: React.FC<CvUploadProps> = ({
       }
     });
 
-    const finalSections: Record<string, string> = {}; // Final type for joined sections
+    const finalSections: Record<string, string> = {};
     Object.keys(sections).forEach((key) => {
       finalSections[key] = sections[key].join("\n");
-      console.log("section......",sections[key])
     });
 
     return finalSections;
@@ -145,50 +146,63 @@ const CvUpload: React.FC<CvUploadProps> = ({
         }
       }
 
-      const extractedText: string = result.content || "No text extracted."; // Type for extractedText
+      const extractedText: string = result.content || "No text extracted.";
       const structuredOutput = parseCvText(extractedText);
       setStructuredData(structuredOutput);
 
-      console.log("text....", structuredOutput);
+      // Store CV data in localStorage for later use in the interview
+      localStorage.setItem('cvData', JSON.stringify(structuredOutput));
 
+      console.log("Extracted CV data:", structuredOutput);
+
+      // Generate basic questions for validation (without custom questions)
+      // The actual interview questions with custom questions will be generated later
       const questionResponse = await axios.post(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/api/generate-questions`,
         {
           jobDescription,
-          cvDetails: structuredOutput,
+          cvDetails: structuredOutput
         });
 
+      // Extract candidate name
       const name = await axios.post(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/api/extract-name`, {
-                text: extractedText
-            });  
+        text: extractedText
+      });  
 
-      console.log("questions from API.....", questionResponse.data);
-      console.log("name from API.....", name?.data?.name);
+      console.log("Generated basic questions for validation:", questionResponse.data);
+      console.log("Extracted name:", name?.data?.name);
 
-      setInterviewerNameString(name?.data?.name)
+      setInterviewerNameString(name?.data?.name || "Candidate");
       
-      // Ensure the data is an array of strings before setting
+      // Store basic questions for validation (actual interview questions will be generated later with custom questions)
       if (Array.isArray(questionResponse.data) && questionResponse.data.every((item: any) => typeof item === 'string')) {
         setQuestionsArray(questionResponse.data as string[]);
       } else {
         console.error("API response for questions is not a string array:", questionResponse.data);
         alert("Received unexpected question format from API.");
-        return; // Stop if data format is incorrect
+        return;
       }
 
       setShowPopup(true);
 
     } catch (error) {
-      console.error("Error during extraction and generation:", error); // Log full error
+      console.error("Error during extraction and generation:", error);
       alert("Error during extraction and generation. Check console for details.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to navigate to interview page when "Next" is clicked
   const handleNextClick = () => {
-    setShowPopup(false); // Close the dialog
-    navigate("/interview"); // Navigate to the interview page
+    setShowPopup(false);
+    
+    if (interviewId) {
+      // Navigate to dynamic interview page
+      const urlSlug = jobRole.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      navigate(`/interview/${urlSlug}`);
+    } else {
+      // Fallback to original interview page
+      navigate("/interview");
+    }
   };
 
   return (
@@ -245,7 +259,23 @@ const CvUpload: React.FC<CvUploadProps> = ({
             <Typography variant="body1" sx={{ color: "#5a5a5a", whiteSpace: "pre-wrap" }}>
               {jobDescription}
             </Typography>
+            
+            {/* {customQuestions.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" fontWeight="bold" mb={1}>
+                  Custom Interview Questions
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, color: "#5a5a5a" }}>
+                  {customQuestions.map((question, index) => (
+                    <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5 }}>
+                      {question}
+                    </Typography>
+                  ))}
+                </Box>
+              </Box>
+            )} */}
           </Paper>
+          
           <Typography variant="h6" color="white" fontWeight="bold" mb={2}>
             Submit Your CV
           </Typography>
@@ -301,7 +331,6 @@ const CvUpload: React.FC<CvUploadProps> = ({
             {loading ? "Processing..." : "Submit"}
           </Button>
         </Box>
-        {/* Removed commented-out Right Section */}
       </Box>
 
       {/* Loading Backdrop */}
@@ -315,14 +344,24 @@ const CvUpload: React.FC<CvUploadProps> = ({
           CV Submitted Successfully!
         </DialogTitle>
         <DialogContent sx={{ textAlign: "center" }}>
-          <Typography sx={{ mb: 2 }}>Click "Next" to attend a quick interview.</Typography>
+          <Typography sx={{ mb: 2 }}>
+            Your CV has been processed and personalized questions have been generated.
+          </Typography>
+          <Typography sx={{ mb: 2 }}>
+            Click "Start Interview" to begin your AI-powered interview session.
+          </Typography>
+          {customQuestions.length > 0 && (
+            <Typography variant="body2" sx={{ color: "#666", mb: 2 }}>
+              This interview includes {customQuestions.length} custom question{customQuestions.length !== 1 ? 's' : ''} along with AI-generated questions.
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center" }}>
           <Button
             variant="contained"
             color="success"
-            onClick={handleNextClick} // Changed from href to onClick
-            size = "small"
+            onClick={handleNextClick}
+            size="small"
             sx={{
               borderRadius: "20px",
               textTransform: "none",
@@ -331,7 +370,7 @@ const CvUpload: React.FC<CvUploadProps> = ({
               "&:hover": { backgroundColor: "#218838" },
             }}
           >
-            Next
+            Start Interview
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import VideoFeed from "@/components/VideoFeed";
 import InterviewControls from "@/components/InterviewControls";
 import SummaryModal from "@/components/SummaryModal";
-import { Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, ArrowLeft } from "lucide-react";
 import SmartHireLogo from "../assets/SmartHireLogo.png";
 
 import InterviewQuestionContext, {
@@ -19,15 +20,30 @@ import InterviewerNameContext, {
   InterviewerNameContextType,
 } from "@/contexts/InterviewerNameContext";
 
-const Index: React.FC = () => {
-  // Explicitly type Index as a functional component
+interface Interview {
+  id: string;
+  jobTitle: string;
+  jobDescription: string;
+  createdAt: string;
+  status: "active" | "draft" | "archived";
+  candidatesCount: number;
+  customQuestions?: string[]; // Add this line
+}
+
+const DynamicInterview: React.FC = () => {
+  const { jobSlug } = useParams<{ jobSlug: string }>();
+  const navigate = useNavigate();
+
+  const [currentInterview, setCurrentInterview] = useState<Interview | null>(
+    null
+  );
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [isListening, setIsListening] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
-  const [welcomeSpeechPlayed, setWelcomeSpeechPlayed] = useState(false); // New state to track welcome speech
+  const [welcomeSpeechPlayed, setWelcomeSpeechPlayed] = useState(false);
   const [answeredArray, setAnsweredArray] = useState<any[]>([]);
   const [evaluationAnsweredArray, setEvaluationAnsweredArray] = useState<any>({
     individualEvaluations: [],
@@ -39,38 +55,120 @@ const Index: React.FC = () => {
     },
   });
   const [isEvaluating, setEvaluating] = useState(false);
+  const [questionsGenerated, setQuestionsGenerated] = useState(false);
 
-  const { questions }: InterviewQuestionContextType = useContext(
-    InterviewQuestionContext
-  );
-  const { jobTitle }: JobTitleContextType = useContext(JobTitleContext);
-  const { interviewerName }: InterviewerNameContextType = useContext(
-    InterviewerNameContext
-  );
+  const { questions, setQuestionsArray }: InterviewQuestionContextType =
+    useContext(InterviewQuestionContext);
+  const { setJobTitleString }: JobTitleContextType =
+    useContext(JobTitleContext);
+  const {
+    interviewerName,
+    setInterviewerNameString,
+  }: InterviewerNameContextType = useContext(InterviewerNameContext);
+
   const totalQuestions = questions.length;
 
   const currentQuestionText =
-    questions[currentQuestion - 1] || "Loading next question..."; // Handle undefined gracefully
-
+    questions[currentQuestion - 1] || "Loading next question...";
   const progress =
     totalQuestions > 0 ? (currentQuestion / totalQuestions) * 100 : 0;
 
+  // Load interview data from localStorage
   useEffect(() => {
-    console.log("answeredArray.....", answeredArray);
-  }, [answeredArray.length]);
+    const storedInterview = localStorage.getItem("currentInterview");
+    if (storedInterview) {
+      const interview = JSON.parse(storedInterview);
+      setCurrentInterview(interview);
+      setJobTitleString(interview.jobTitle);
+    } else {
+      // If no stored interview, redirect to create interviews page
+      navigate("/create-interviews");
+    }
+  }, [jobSlug, navigate, setJobTitleString]);
 
+  // Generate questions when interview is loaded
   useEffect(() => {
-    console.log("job title....", jobTitle);
-  }, [jobTitle]);
+    if (currentInterview && !questionsGenerated) {
+      generateQuestionsForInterview();
+    }
+  }, [currentInterview, questionsGenerated]);
 
-  useEffect(() => {
-    console.log("interviewer Name....", interviewerName);
-  }, [interviewerName]);
+  const generateQuestionsForInterview = async () => {
+    try {
+      // Get CV data from localStorage (stored during CV upload)
+      const storedCvData = localStorage.getItem("cvData");
+      let cvDetails = {};
 
-  // Text-to-Speech function with proper typing
+      if (storedCvData) {
+        cvDetails = JSON.parse(storedCvData);
+      } else {
+        // Fallback CV data if not found
+        cvDetails = {
+          EXPERIENCE:
+            "Software Developer with 3 years experience in React and Node.js",
+          EDUCATION: "Bachelor's in Computer Science",
+          SKILLS: "JavaScript, React, Node.js, MongoDB, AWS",
+        };
+      }
+
+      // Now generate questions with both CV data AND custom questions
+      const questionResponse = await fetch(
+        `${
+          import.meta.env.VITE_REACT_APP_BACKEND_BASEURL
+        }/api/generate-questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jobDescription: currentInterview?.jobDescription,
+            cvDetails: cvDetails,
+            customQuestions: currentInterview?.customQuestions || [], // Include custom questions here
+          }),
+        }
+      );
+
+      if (!questionResponse.ok) {
+        throw new Error("Failed to generate questions");
+      }
+
+      const questions = await questionResponse.json();
+
+      if (Array.isArray(questions)) {
+        setQuestionsArray(questions);
+        setQuestionsGenerated(true);
+      }
+    } catch (error) {
+      console.error("Error generating questions:", error);
+      // Fallback to default questions if generation fails
+      const fallbackQuestions = [
+        "Tell me about your experience with the technologies mentioned in this role.",
+        "Describe a challenging project you've worked on and how you overcame the difficulties.",
+        "Why are you interested in this particular position and our company?",
+      ];
+
+      // If there are custom questions, add them to the fallback
+      if (
+        currentInterview?.customQuestions &&
+        currentInterview.customQuestions.length > 0
+      ) {
+        const combinedQuestions = [
+          ...currentInterview.customQuestions,
+          ...fallbackQuestions,
+        ];
+        setQuestionsArray(combinedQuestions.slice(0, 3)); // Limit to 3 questions
+      } else {
+        setQuestionsArray(fallbackQuestions);
+      }
+      setQuestionsGenerated(true);
+    }
+  };
+
+  // Text-to-Speech function
   const textToSpeech = async (text: string) => {
-    const apiKey = "sk_e22858d9fb425d71974efdc861de1ac41f818187f270ac20"; // Replace with your ElevenLabs API key
-    const voiceId = "UgBBYS2sOqTuMpoF3BR0"; // Replace with your chosen voice ID
+    const apiKey = "sk_e22858d9fb425d71974efdc861de1ac41f818187f270ac20";
+    const voiceId = "UgBBYS2sOqTuMpoF3BR0";
 
     try {
       const response = await fetch(
@@ -97,30 +195,26 @@ const Index: React.FC = () => {
       audio.play();
     } catch (error) {
       console.error("Error during text-to-speech:", error);
-      // Implement a more robust error handling/user feedback here
     }
   };
 
-  // Effect for initial welcome speech, runs only once
+  // Welcome speech effect
   useEffect(() => {
-    if (!welcomeSpeechPlayed) {
-      // Check if it hasn't played yet
+    if (!welcomeSpeechPlayed && currentInterview) {
+      const candidateName = interviewerName || "Candidate";
       textToSpeech(
-        `Hi ${interviewerName}, Welcome to Paycor SmartHire. You'll be interviewed by me. Whenever you're ready to dive into the interview, hit that Start button! Wishing you the very best of luck!`
+        `Hi ${candidateName}, Welcome to the ${currentInterview.jobTitle} interview. I'll be conducting this AI-powered interview today. When you're ready to begin, please click the Start Interview button. Good luck!`
       );
-      setWelcomeSpeechPlayed(true); // Mark as played
+      setWelcomeSpeechPlayed(true);
     }
-  }, [welcomeSpeechPlayed]); // Dependency array: only re-run if welcomeSpeechPlayed changes (which it will, once)
+  }, [welcomeSpeechPlayed, currentInterview, interviewerName]);
 
   const handleStartInterview = () => {
     if (questions.length === 0) {
-      alert(
-        "No questions loaded yet. Please upload CV first to generate questions."
-      );
+      alert("Questions are still being generated. Please wait a moment.");
       return;
     }
     setIsInterviewStarted(true);
-    // setIsListening(true); // This should probably happen after the first question is spoken by the AI via Banner component
   };
 
   const handleNextQuestion = () => {
@@ -137,10 +231,41 @@ const Index: React.FC = () => {
     setShowSummary(true);
   };
 
+  const handleBackToInterviews = () => {
+    navigate("/create-interviews");
+  };
+
+  if (!currentInterview) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Loading Interview...
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we prepare your interview session.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isInterviewStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-4xl w-full">
+          {/* Header with back button */}
+          <div className="flex items-center mb-6">
+            <Button
+              variant="ghost"
+              onClick={handleBackToInterviews}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Interviews
+            </Button>
+          </div>
+
           <div className="text-center items-center mb-8">
             <img
               width={180}
@@ -149,6 +274,10 @@ const Index: React.FC = () => {
               className="inline-block mx-auto"
               alt="SmartHire Logo"
             />
+            <h1 className="text-2xl font-bold text-gray-900 mt-4 mb-2">
+              {currentInterview.jobTitle}
+            </h1>
+            <p className="text-gray-600">AI-Powered Interview Session</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -192,40 +321,37 @@ const Index: React.FC = () => {
 
             <Card className="bg-white/80 backdrop-blur-sm shadow-xl">
               <CardHeader>
-                <CardTitle>Interview Guidelines</CardTitle>
+                <CardTitle>Interview Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                    1
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Speak clearly and at a normal pace
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Job Title
+                  </h3>
+                  <p className="text-gray-700">{currentInterview.jobTitle}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Questions Ready
+                  </h3>
+                  <p className="text-gray-700">
+                    {questionsGenerated
+                      ? `${questions.length} questions generated`
+                      : "Generating questions..."}
                   </p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                    2
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Take your time to think before answering
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                    3
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    The AI will indicate when it's ready for your response
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                    4
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    You can proceed to the next question when ready
-                  </p>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Interview Guidelines
+                  </h3>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Speak clearly and at a normal pace</li>
+                    <li>• Take your time to think before answering</li>
+                    <li>
+                      • The AI will indicate when it's ready for your response
+                    </li>
+                    <li>• You can proceed to the next question when ready</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -236,9 +362,7 @@ const Index: React.FC = () => {
               onClick={handleStartInterview}
               size="lg"
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={
-                !isMicEnabled || !isVideoEnabled || questions.length === 0
-              } // Disable if no questions
+              disabled={!isMicEnabled || !isVideoEnabled || !questionsGenerated}
             >
               Start Interview
             </Button>
@@ -247,10 +371,9 @@ const Index: React.FC = () => {
                 Please enable both camera and microphone to start the interview.
               </p>
             )}
-            {questions.length === 0 && (
-              <p className="text-sm text-red-600 mt-2">
-                No interview questions loaded. Please go back to the CV upload
-                page to generate questions.
+            {!questionsGenerated && (
+              <p className="text-sm text-blue-600 mt-2">
+                Generating personalized questions for this role...
               </p>
             )}
           </div>
@@ -277,7 +400,7 @@ const Index: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                AI Interview Session
+                {currentInterview.jobTitle} - AI Interview
               </h1>
               <p className="text-gray-600">
                 Question {currentQuestion} of {totalQuestions}
@@ -323,7 +446,6 @@ const Index: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  {/* Ensure currentQuestionText is not undefined */}
                   <InterviewControls
                     currentQuestionText={currentQuestionText}
                     setIsListening={setIsListening}
@@ -339,7 +461,7 @@ const Index: React.FC = () => {
                     setEvaluationAnsweredArray={setEvaluationAnsweredArray}
                     isEvaluating={isEvaluating}
                     setEvaluating={setEvaluating}
-                    jobTitle={jobTitle}
+                    jobTitle={currentInterview.jobTitle}
                   />
                 </div>
               </CardContent>
@@ -361,4 +483,4 @@ const Index: React.FC = () => {
   );
 };
 
-export default Index;
+export default DynamicInterview;
